@@ -466,7 +466,10 @@ static void slirp_smb_cleanup(SlirpState *s)
     int ret;
 
     if (s->smb_dir[0] != '\0') {
-        snprintf(cmd, sizeof(cmd), "rm -rf %s", s->smb_dir);
+        ret = snprintf(cmd, sizeof(cmd), "rm -rf %s", s->smb_dir);
+	if (ret > sizeof(cmd)) {
+		error_report("slirp_smp_cleanup failed: directory name too long");
+	}
         ret = system(cmd);
         if (ret == -1 || !WIFEXITED(ret)) {
             error_report("'%s' failed.", cmd);
@@ -486,6 +489,7 @@ static int slirp_smb(SlirpState* s, const char *exported_dir,
     char smb_cmdline[128];
     struct passwd *passwd;
     FILE *f;
+    int ret;
 
     passwd = getpwuid(geteuid());
     if (!passwd) {
@@ -511,8 +515,10 @@ static int slirp_smb(SlirpState* s, const char *exported_dir,
         error_report("could not create samba server dir '%s'", s->smb_dir);
         return -1;
     }
-    snprintf(smb_conf, sizeof(smb_conf), "%s/%s", s->smb_dir, "smb.conf");
-
+    ret = snprintf(smb_conf, sizeof(smb_conf), "%s/%s", s->smb_dir, "smb.conf");
+    if (ret > sizeof(smb_conf)) {
+	    error_report("directory name too long");
+    }
     f = fopen(smb_conf, "w");
     if (!f) {
         slirp_smb_cleanup(s);
@@ -556,8 +562,11 @@ static int slirp_smb(SlirpState* s, const char *exported_dir,
             );
     fclose(f);
 
-    snprintf(smb_cmdline, sizeof(smb_cmdline), "%s -l %s -s %s",
+    ret = snprintf(smb_cmdline, sizeof(smb_cmdline), "%s -l %s -s %s",
              CONFIG_SMBD_COMMAND, s->smb_dir, smb_conf);
+    if (ret > sizeof(smb_cmdline)) {
+	    error_report("smb command too long");
+    }
 
     if (slirp_add_exec(s->slirp, 0, smb_cmdline, &vserver_addr, 139) < 0 ||
         slirp_add_exec(s->slirp, 0, smb_cmdline, &vserver_addr, 445) < 0) {

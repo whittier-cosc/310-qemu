@@ -306,6 +306,7 @@ static void blkverify_attach_aio_context(BlockDriverState *bs,
 
 static void blkverify_refresh_filename(BlockDriverState *bs)
 {
+    int ret;
     BDRVBlkverifyState *s = bs->opaque;
 
     /* bs->file has already been refreshed */
@@ -324,9 +325,12 @@ static void blkverify_refresh_filename(BlockDriverState *bs)
     }
 
     if (bs->file->exact_filename[0] && s->test_file->exact_filename[0]) {
-        snprintf(bs->exact_filename, sizeof(bs->exact_filename),
+        ret = snprintf(bs->exact_filename, sizeof(bs->exact_filename),
                  "blkverify:%s:%s",
                  bs->file->exact_filename, s->test_file->exact_filename);
+	if (ret > sizeof(bs->exact_filename)) {
+		bs->exact_filename[0] = 0;
+	}
     }
 }
 

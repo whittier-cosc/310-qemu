@@ -726,6 +726,7 @@ static void blkdebug_refresh_filename(BlockDriverState *bs)
     QDict *opts;
     const QDictEntry *e;
     bool force_json = false;
+    int ret;
 
     for (e = qdict_first(bs->options); e; e = qdict_next(bs->options, e)) {
         if (strcmp(qdict_entry_key(e), "config") &&
@@ -745,10 +746,13 @@ static void blkdebug_refresh_filename(BlockDriverState *bs)
     }
 
     if (!force_json && bs->file->exact_filename[0]) {
-        snprintf(bs->exact_filename, sizeof(bs->exact_filename),
+        ret = snprintf(bs->exact_filename, sizeof(bs->exact_filename),
                  "blkdebug:%s:%s",
                  qdict_get_try_str(bs->options, "config") ?: "",
                  bs->file->exact_filename);
+	if (ret > sizeof(bs->file->exact_filename)) {
+		bs->exact_filename[0] = 0;
+	}
     }
 
     opts = qdict_new();
